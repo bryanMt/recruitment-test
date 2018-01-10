@@ -6,7 +6,7 @@ namespace AppBundle\Exception;
 
 use Exception;
 
-class InvalidDepositAmountException extends InputValidationException {
+class InvalidAmountException extends InputValidationException {
 
   public function __construct()
   {
