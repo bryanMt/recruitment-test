@@ -8,6 +8,7 @@
 
 namespace AppBundle\Controller;
 
+use AppBundle\Exception\InvalidAmountException;
 use AppBundle\Exception\InvalidDepositAmountException;
 use AppBundle\Exception\UnsupportedCurrencyException;
 use AppBundle\Repository\CustomerRepository;
@@ -51,7 +52,7 @@ class TransactionsController extends FOSRestController
     }
 
     if  (!is_numeric($params["amount"]) || floatval($params['amount']) < 0){
-      throw new InvalidDepositAmountException();
+      throw new InvalidAmountException();
     }
 
   }
