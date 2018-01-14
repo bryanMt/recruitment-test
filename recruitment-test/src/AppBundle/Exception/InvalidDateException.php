@@ -10,7 +10,7 @@ class InvalidDateException extends InputValidationException {
 
   public function __construct()
   {
-    parent::__construct("date.invalid [Format: Y-m-d");
+    parent::__construct("date.invalid [Format: Y-m-d]");
   }
 
 }
