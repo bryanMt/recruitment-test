@@ -26,6 +26,7 @@
     public function __construct(Connection $dbalConnection,
                                 CustomerRepository $customerRepository)  {
       $this->connection = $dbalConnection;
+      $this->connection->setTransactionIsolation(Connection::TRANSACTION_SERIALIZABLE);
       $this->customerRepository = $customerRepository;
       $this->bonusService = new BonusService($this);
 
@@ -82,18 +83,21 @@
 
         $deposit = new Deposit($customer, $depositAmount);
 
-        if ($this->bonusService->shouldAddBonus($customer)){
-          $bonusAmount = $this->bonusService->calculateBonusAmount($customer, $deposit);
-          $deposit->setBonusDepositAmount($bonusAmount);
-        }
-
-        //tx demarcation
-        $this->connection->beginTransaction();
 
         try {
 
+          //tx demarcation
+          $this->connection->beginTransaction();
+
+          if ($this->bonusService->shouldAddBonus($customer)){
+            $bonusAmount = $this->bonusService->calculateBonusAmount($customer, $deposit);
+            $deposit->setBonusDepositAmount($bonusAmount);
+          }
+
           $deposit = $this->addDepositRecord($deposit);
           $this->customerRepository->deposit($deposit);
+
+          //commit tx
           $this->connection->commit();
 
           return $deposit;
