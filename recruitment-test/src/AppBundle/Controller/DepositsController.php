@@ -38,17 +38,17 @@ class DepositsController extends TransactionsController
   /**
    *
    * @Rest\Post("/deposit/{customer_id}")
-   * @Rest\RequestParam(name="amount", requirements="^[-+]?\d+(\.\d+)?", description="Deposit amount.")
-   * @Rest\RequestParam(name="currency", requirements="[a-zA-Z]{3}", description="Currency.")
+   * @Rest\RequestParam(name="amount", requirements={"rule" = "^[-+]?\d+(\.\d+)?", "error_message" = "Invalid deposit amount" }, strict=true, description="Deposit amount")
+   * @Rest\RequestParam(name="currency", requirements={"rule" = "[a-zA-Z]{3}", "error_message" = "Invalid currency" }, strict=true, description="Currency")
    *
    * @param ParamFetcher $paramFetcher
    */
   public function deposit(ParamFetcher $paramFetcher, $customer_id){
 
-    //get all params
-    $params = $paramFetcher->all(true);
-
     try {
+
+      //get all params
+      $params = $paramFetcher->all(true);
 
       $this->validateInputParams($params);
 
@@ -58,6 +58,8 @@ class DepositsController extends TransactionsController
 
       return View::create($deposit,Response::HTTP_OK);
 
+    } catch (\RuntimeException $e){
+      return View::create(['errors' => explode("violated a constraint", $e->getMessage())[1]], Response::HTTP_BAD_REQUEST);
     } catch (InputValidationException $e) {
       return View::create(['errors' => [$e->getMessage()]], Response::HTTP_BAD_REQUEST);
     } catch (Exception $e){
