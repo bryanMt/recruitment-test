@@ -17,6 +17,7 @@ use FOS\RestBundle\Controller\Annotations as Rest;
 use FOS\RestBundle\Controller\FOSRestController;
 use Symfony\Component\HttpFoundation\Response;
 use FOS\RestBundle\View\View;
+use Symfony\Component\Validator\Exception\ValidatorException;
 
 class CustomersController extends FOSRestController
 {
@@ -58,28 +59,31 @@ class CustomersController extends FOSRestController
   /**
    *
    * @Rest\Post("/customer")
-   * @Rest\RequestParam(name="gender", requirements="(male|female)", description="Gender.")
-   * @Rest\RequestParam(name="firstname", requirements="[a-z]+", description="Firstname.")
-   * @Rest\RequestParam(name="lastname", requirements="[a-z]+", description="Lastname.")
-   * @Rest\RequestParam(name="country", requirements="[a-zA-Z]{2}", description="country.")
+   * @Rest\RequestParam(name="gender", requirements={"rule" = "^(male|female)", "error_message" = "Invalid gender" } ,strict=true, description="Gender.")
+   * @Rest\RequestParam(name="firstname", requirements={"rule" = "[a-z]+", "error_message" = "Invalid firstname" } ,strict=true, description="Firstname.")
+   * @Rest\RequestParam(name="lastname", requirements={"rule" = "[a-z]+", "error_message" = "Invalid lastname" } ,strict=true,  description="Lastname.")
+   * @Rest\RequestParam(name="country", requirements={"rule" = "[a-zA-Z]{2}", "error_message" = "Invalid country" } ,strict=true,   description="country.")
    * @Rest\RequestParam(name="email", description="email.")
    *
    * @param ParamFetcher $paramFetcher
    */
   public function addNewCustomer(ParamFetcher $paramFetcher){
 
-    //get all params
-    $params = $paramFetcher->all(true);
 
     try {
+
+      //get all params
+      $params = $paramFetcher->all(true);
 
       $this->validateInputParams($params);
 
       $customer = Customer::from_array($params);
       $customer = $this->customerRepository->addNewCustomer($customer);
 
-      return View::create($customer,Response::HTTP_CREATED);
+      return View::create($customer, Response::HTTP_CREATED);
 
+    } catch (\RuntimeException $e){
+       return View::create(['errors' => explode("violated a constraint", $e->getMessage())[1]], Response::HTTP_BAD_REQUEST);
     } catch (InputValidationException $e) {
       return View::create(['errors' => [$e->getMessage()]], Response::HTTP_BAD_REQUEST);
     } catch (Exception $e){
@@ -91,20 +95,20 @@ class CustomersController extends FOSRestController
   /**
    *
    * @Rest\Put("/customer/{customer_id}")
-   * @Rest\RequestParam(name="gender", requirements="(male|female)", nullable=true, description="Gender.")
-   * @Rest\RequestParam(name="firstname", requirements="[a-z]+", nullable=true, description="Firstname.")
-   * @Rest\RequestParam(name="lastname", requirements="[a-z]+", nullable=true, description="Lastname.")
-   * @Rest\RequestParam(name="country", requirements="[a-zA-Z]{2}", nullable=true, description="country.")
+   * @Rest\RequestParam(name="gender", requirements={"rule" = "^(male|female)", "error_message" = "Invalid gender" }, strict=true, nullable=true, description="Gender.")
+   * @Rest\RequestParam(name="firstname", requirements={"rule" = "[a-z]+", "error_message" = "Invalid firstname" }, strict=true, nullable=true, description="Firstname.")
+   * @Rest\RequestParam(name="lastname", requirements={"rule" = "[a-z]+", "error_message" = "Invalid lastname" } , strict=true, nullable=true, description="Lastname.")
+   * @Rest\RequestParam(name="country", requirements={"rule" = "[a-zA-Z]{2}", "error_message" = "Invalid country" }, strict=true, nullable=true, description="country.")
    * @Rest\RequestParam(name="email", description="email.", nullable=true)
    *
    * @param ParamFetcher $paramFetcher
    */
   public function editCustomer(ParamFetcher $paramFetcher, $customer_id){
 
-    //get all params
-    $params = $paramFetcher->all(true);
-
     try {
+
+      //get all params
+      $params = $paramFetcher->all(true);
 
       $params = $this->cleanUpdateParams($params);
 
@@ -120,6 +124,8 @@ class CustomersController extends FOSRestController
 
       return View::create($updatedCustomer,Response::HTTP_OK);
 
+    } catch (\RuntimeException $e){
+      return View::create(['errors' => explode("violated a constraint", $e->getMessage())[1]], Response::HTTP_BAD_REQUEST);
     } catch (InputValidationException $e) {
       return View::create(['errors' => [$e->getMessage()]], Response::HTTP_BAD_REQUEST);
     } catch (Exception $e){
