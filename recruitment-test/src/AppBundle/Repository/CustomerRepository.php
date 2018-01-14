@@ -150,8 +150,8 @@
                     bonus_balance = bonus_balance + :bonus_amount
                 WHERE customer_id = :customer_id; ";
         $stmt = $this->connection->prepare($sql);
-        $stmt->bindValue("deposit_amount", $deposit->getRealDepositAmount());
-        $stmt->bindValue("bonus_amount", $deposit->getBonusDepositAmount());
+        $stmt->bindValue("deposit_amount", round($deposit->getRealDepositAmount(),2));
+        $stmt->bindValue("bonus_amount", round($deposit->getBonusDepositAmount(),2));
         $stmt->bindValue("customer_id", $deposit->getCustomerId());
         return $stmt->execute();
 
