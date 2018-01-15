@@ -59,7 +59,7 @@ class DepositsController extends TransactionsController
       return View::create($deposit,Response::HTTP_OK);
 
     } catch (\RuntimeException $e){
-      return View::create(['errors' => explode("violated a constraint", $e->getMessage())[1]], Response::HTTP_BAD_REQUEST);
+      return View::create(['errors' =>  [$e->getMessage()]], Response::HTTP_BAD_REQUEST);
     } catch (InputValidationException $e) {
       return View::create(['errors' => [$e->getMessage()]], Response::HTTP_BAD_REQUEST);
     } catch (Exception $e){
