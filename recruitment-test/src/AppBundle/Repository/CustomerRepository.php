@@ -8,6 +8,7 @@
   use AppBundle\Exception\InputValidationException;
   use Doctrine\DBAL\Connection;
   use Doctrine\DBAL\Driver\Statement;
+  use Exception;
 
 
   class CustomerRepository  {
@@ -145,15 +146,29 @@
      */
     public function deposit(Deposit $deposit) : bool {
 
-        $sql = "UPDATE CUSTOMER_BALANCE 
-                SET real_balance = real_balance + :deposit_amount,
-                    bonus_balance = bonus_balance + :bonus_amount
-                WHERE customer_id = :customer_id; ";
+      try {
+
+        $this->connection->beginTransaction();
+        $sql = "LOCK TABLE customer_balance WRITE;
+                UPDATE customer_balance SET real_balance = real_balance + :deposit_amount,
+                                            bonus_balance = bonus_balance + :bonus_amount
+                                          WHERE customer_id = :customer_id;
+                UNLOCK TABLES;";
         $stmt = $this->connection->prepare($sql);
         $stmt->bindValue("deposit_amount", round($deposit->getRealDepositAmount(),2));
         $stmt->bindValue("bonus_amount", round($deposit->getBonusDepositAmount(),2));
         $stmt->bindValue("customer_id", $deposit->getCustomerId());
-        return $stmt->execute();
+        $stmt->execute();
+
+        $this->connection->commit();
+
+        return true;
+
+      }  catch (Exception $e){
+        $this->connection->rollBack();
+        throw $e;
+      }
+
 
     }
 
@@ -165,7 +180,8 @@
 
         $sql = "UPDATE CUSTOMER_BALANCE 
                 SET real_balance = real_balance - :withdrawal_amount
-                WHERE customer_id = :customer_id; ";
+                WHERE customer_id = :customer_id; 
+                UNLOCK TABLES;";
         $stmt = $this->connection->prepare($sql);
         $stmt->bindValue("withdrawal_amount", $withdrawal->getWithdrawalAmount());
         $stmt->bindValue("customer_id", $withdrawal->getCustomerId());
@@ -181,7 +197,7 @@
      */
     public function getRealBalance(Customer $customer) : float {
 
-
+      $this->connection->exec("LOCK TABLES customer_balance WRITE; ");
       $sql = "SELECT real_balance FROM CUSTOMER_BALANCE WHERE customer_id = :customer_id; ";
       $stmt = $this->connection->prepare($sql);
       $stmt->bindValue("customer_id", $customer->getId());
