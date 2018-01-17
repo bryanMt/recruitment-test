@@ -26,7 +26,6 @@
     public function __construct(Connection $dbalConnection,
                                 CustomerRepository $customerRepository)  {
       $this->connection = $dbalConnection;
-      $this->connection->setTransactionIsolation(Connection::TRANSACTION_SERIALIZABLE);
       $this->customerRepository = $customerRepository;
       $this->bonusService = new BonusService($this);
 
@@ -42,12 +41,12 @@
      */
     public function getTotalNumberDeposits(Customer $customer) : int {
 
-        $sql = "SELECT COUNT(*) as tot_deposits FROM CUSTOMER_DEPOSITS WHERE customer_id = :customer_id";
+        $this->connection->exec("LOCK TABLES customer_deposits WRITE;");
+        $sql = "SELECT COUNT(*) as tot_deposits FROM CUSTOMER_DEPOSITS WHERE customer_id = :customer_id;";
         $stmt = $this->connection->prepare($sql);
         $stmt->bindValue("customer_id", $customer->getId());
         $stmt->execute();
         $record = $stmt->fetch();
-
         return intval($record['tot_deposits']);
 
     }
@@ -63,7 +62,8 @@
      */
     private function addDepositRecord(Deposit $deposit) : Deposit {
       $sql = "INSERT INTO CUSTOMER_DEPOSITS (customer_id, real_deposit_amount, bonus_deposit_amount)
-                VALUES (:customer_id, :real_deposit_amount, :bonus_deposit_amount);";
+              VALUES (:customer_id, :real_deposit_amount, :bonus_deposit_amount);
+              UNLOCK TABLES";
       $stmt = $this->connection->prepare($sql);
       $stmt->bindValue("customer_id", $deposit->getCustomerId());
       $stmt->bindValue("real_deposit_amount", $deposit->getRealDepositAmount());
