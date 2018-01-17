@@ -68,10 +68,9 @@
         }
 
         $withdrawal = new Withdrawal($customer, $withdrawalAmount);
-
+        $this->customerRepository->withdraw($withdrawal);
         $withdrawal = $this->addWithdrawalRecord($withdrawal);
 
-        $this->customerRepository->withdraw($withdrawal);
         $this->connection->commit();
 
         return $withdrawal;
