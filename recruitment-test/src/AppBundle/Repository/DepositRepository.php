@@ -40,8 +40,7 @@
      * @return int
      */
     public function getTotalNumberDeposits(Customer $customer) : int {
-
-        $sql = "SELECT COUNT(*) as tot_deposits FROM CUSTOMER_DEPOSITS WHERE customer_id = :customer_id LOCK IN SHARE MODE";
+        $sql = "SELECT COUNT(*) as tot_deposits FROM CUSTOMER_DEPOSITS WHERE customer_id = :customer_id FOR UPDATE";
         $stmt = $this->connection->prepare($sql);
         $stmt->bindValue("customer_id", $customer->getId());
         $stmt->execute();
@@ -83,6 +82,8 @@
 
 
         try {
+
+          $this->connection->exec("SET TRANSACTION ISOLATION LEVEL READ COMMITTED;");
 
           //tx demarcation
           $this->connection->beginTransaction();
