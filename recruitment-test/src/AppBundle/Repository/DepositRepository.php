@@ -41,8 +41,7 @@
      */
     public function getTotalNumberDeposits(Customer $customer) : int {
 
-        $this->connection->exec("LOCK TABLES customer_deposits WRITE;");
-        $sql = "SELECT COUNT(*) as tot_deposits FROM CUSTOMER_DEPOSITS WHERE customer_id = :customer_id;";
+        $sql = "SELECT COUNT(*) as tot_deposits FROM CUSTOMER_DEPOSITS WHERE customer_id = :customer_id LOCK IN SHARE MODE";
         $stmt = $this->connection->prepare($sql);
         $stmt->bindValue("customer_id", $customer->getId());
         $stmt->execute();
@@ -62,8 +61,7 @@
      */
     private function addDepositRecord(Deposit $deposit) : Deposit {
       $sql = "INSERT INTO CUSTOMER_DEPOSITS (customer_id, real_deposit_amount, bonus_deposit_amount)
-              VALUES (:customer_id, :real_deposit_amount, :bonus_deposit_amount);
-              UNLOCK TABLES";
+              VALUES (:customer_id, :real_deposit_amount, :bonus_deposit_amount);";
       $stmt = $this->connection->prepare($sql);
       $stmt->bindValue("customer_id", $deposit->getCustomerId());
       $stmt->bindValue("real_deposit_amount", $deposit->getRealDepositAmount());

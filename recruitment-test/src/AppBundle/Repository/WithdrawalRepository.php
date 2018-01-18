@@ -22,7 +22,6 @@
     public function __construct(Connection $dbalConnection,
                                 CustomerRepository $customerRepository)  {
       $this->connection = $dbalConnection;
-      $this->connection->setTransactionIsolation(Connection::TRANSACTION_SERIALIZABLE);
       $this->customerRepository = $customerRepository;
     }
 

@@ -146,29 +146,19 @@
      */
     public function deposit(Deposit $deposit) : bool {
 
-      try {
+      $sql = "SELECT * FROM customer_balance WHERE customer_id = :customer_id FOR UPDATE;";
+      $stmt = $this->connection->prepare($sql);
+      $stmt->bindValue("customer_id", $deposit->getCustomerId());
+      $stmt->execute();
+      $stmt->fetchAll();
 
-        $this->connection->beginTransaction();
-        $sql = "LOCK TABLE customer_balance WRITE;
-                UPDATE customer_balance SET real_balance = real_balance + :deposit_amount,
-                                            bonus_balance = bonus_balance + :bonus_amount
-                                          WHERE customer_id = :customer_id;
-                UNLOCK TABLES;";
-        $stmt = $this->connection->prepare($sql);
-        $stmt->bindValue("deposit_amount", round($deposit->getRealDepositAmount(),2));
-        $stmt->bindValue("bonus_amount", round($deposit->getBonusDepositAmount(),2));
-        $stmt->bindValue("customer_id", $deposit->getCustomerId());
-        $stmt->execute();
 
-        $this->connection->commit();
+      $sql = "UPDATE customer_balance SET real_balance = real_balance + "  . round($deposit->getRealDepositAmount(),2) .
+          ", bonus_balance = bonus_balance + " . round($deposit->getBonusDepositAmount(),2) .
+          " WHERE customer_id = " . $deposit->getCustomerId() . ";";
+      $this->connection->exec($sql);
 
-        return true;
-
-      }  catch (Exception $e){
-        $this->connection->rollBack();
-        throw $e;
-      }
-
+      return true;
 
     }
 
@@ -180,8 +170,7 @@
 
         $sql = "UPDATE CUSTOMER_BALANCE 
                 SET real_balance = real_balance - :withdrawal_amount
-                WHERE customer_id = :customer_id; 
-                UNLOCK TABLES;";
+                WHERE customer_id = :customer_id;";
         $stmt = $this->connection->prepare($sql);
         $stmt->bindValue("withdrawal_amount", $withdrawal->getWithdrawalAmount());
         $stmt->bindValue("customer_id", $withdrawal->getCustomerId());
@@ -197,8 +186,7 @@
      */
     public function getRealBalance(Customer $customer) : float {
 
-      $this->connection->exec("LOCK TABLES customer_balance WRITE; ");
-      $sql = "SELECT real_balance FROM CUSTOMER_BALANCE WHERE customer_id = :customer_id; ";
+      $sql = "SELECT real_balance FROM CUSTOMER_BALANCE WHERE customer_id = :customer_id FOR UPDATE ";
       $stmt = $this->connection->prepare($sql);
       $stmt->bindValue("customer_id", $customer->getId());
       $stmt->execute();
