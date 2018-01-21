@@ -60,7 +60,6 @@
       try {
 
         //tx demarcation
-        $this->connection->exec("SET TRANSACTION ISOLATION LEVEL READ COMMITTED;");
         $this->connection->beginTransaction();
 
         if ($withdrawalAmount > $this->customerRepository->getRealBalance($customer)){
