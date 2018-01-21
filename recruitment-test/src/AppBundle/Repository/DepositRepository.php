@@ -40,12 +40,14 @@
      * @return int
      */
     public function getTotalNumberDeposits(Customer $customer) : int {
-        $sql = "SELECT COUNT(*) as tot_deposits FROM CUSTOMER_DEPOSITS WHERE customer_id = :customer_id FOR UPDATE";
-        $stmt = $this->connection->prepare($sql);
-        $stmt->bindValue("customer_id", $customer->getId());
-        $stmt->execute();
-        $record = $stmt->fetch();
-        return intval($record['tot_deposits']);
+
+      $sql = "SELECT num_deposits FROM customer WHERE id = :customer_id FOR UPDATE";
+      $stmt = $this->connection->prepare($sql);
+      $stmt->bindValue("customer_id", $customer->getId());
+      $stmt->execute();
+      $record = $stmt->fetch();
+
+      return intval($record['num_deposits']);
 
     }
 
@@ -60,7 +62,7 @@
      */
     private function addDepositRecord(Deposit $deposit) : Deposit {
       $sql = "INSERT INTO CUSTOMER_DEPOSITS (customer_id, real_deposit_amount, bonus_deposit_amount)
-              VALUES (:customer_id, :real_deposit_amount, :bonus_deposit_amount);";
+              VALUES (:customer_id, :real_deposit_amount, :bonus_deposit_amount)";
       $stmt = $this->connection->prepare($sql);
       $stmt->bindValue("customer_id", $deposit->getCustomerId());
       $stmt->bindValue("real_deposit_amount", $deposit->getRealDepositAmount());
@@ -80,10 +82,7 @@
 
         $deposit = new Deposit($customer, $depositAmount);
 
-
         try {
-
-          $this->connection->exec("SET TRANSACTION ISOLATION LEVEL READ COMMITTED;");
 
           //tx demarcation
           $this->connection->beginTransaction();
@@ -93,8 +92,10 @@
             $deposit->setBonusDepositAmount($bonusAmount);
           }
 
-          $deposit = $this->addDepositRecord($deposit);
           $this->customerRepository->deposit($deposit);
+          $deposit = $this->addDepositRecord($deposit);
+
+          $this->customerRepository->incrementNumDeposits($customer);
 
           //commit tx
           $this->connection->commit();
