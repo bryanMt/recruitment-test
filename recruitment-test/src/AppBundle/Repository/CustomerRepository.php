@@ -195,4 +195,14 @@
       return floatval($record['real_balance']);
 
     }
+
+    public function incrementNumDeposits(Customer $customer) : bool {
+      $sql = "UPDATE customer SET num_deposits = num_deposits + 1 WHERE id = :customer_id";
+      $stmt = $this->connection->prepare($sql);
+      $stmt->bindValue("customer_id", $customer->getId());
+      return $stmt->execute();
+
+
+
+    }
   }
